@@ -1,0 +1,7 @@
+{
+  "name": "KinSeeker: Adoption Discovery Hub",
+  "description": "A compassionate and secure tool for individuals seeking the truth about their biological origins, providing access to historical archives, common signs of hidden adoption, and reputable search resources. We bridge the gap between rumors and records.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
