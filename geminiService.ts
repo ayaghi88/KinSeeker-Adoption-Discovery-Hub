@@ -2,7 +2,22 @@
 import { GoogleGenAI, Type, GenerateContentResponse } from "@google/genai";
 import { SearchResult, GroundingSource, SearchFilters, QuestionResult, PaternityResult } from "./types";
 
-const aiClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
+const aiClient = (): GoogleGenAI => {
+  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error(
+      "Gemini API Key is missing. To fix this, log in to your Netlify dashboard, go to your Site Settings > Build & deploy > Environment variables, add 'GEMINI_API_KEY' with your Google AI Studio API Key, and then redeploy your site. If building via GitHub Actions, add 'GEMINI_API_KEY' as a repository secret."
+    );
+  }
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
+      },
+    },
+  });
+};
 
 // Generic helper to extract sources from a response
 const extractSources = (candidate: any): GroundingSource[] => {
@@ -32,7 +47,7 @@ export const streamAdvancedArchivesSearch = async (
   `;
 
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: `Search for verifiable historical records, archives, and reputable databases regarding: "${keyword}". 
     ${filterContext}
     Provide detailed information and direct links to databases or archival entries.`,
@@ -59,7 +74,7 @@ export const streamGeneticAnalysis = async (
 ): Promise<GroundingSource[]> => {
   const ai = aiClient();
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-pro-preview",
+    model: "gemini-3.1-pro-preview",
     contents: `Analyze the following raw SNP/Genetic markers for biological insights, focusing on:
     1. Possible intersex-related markers or conditions (e.g., Klinefelter, Turner, AIS).
     2. Rare hereditary mutations or health markers that might have been hidden.
@@ -89,7 +104,7 @@ export const streamPaternityAnalysis = async (
 ): Promise<GroundingSource[]> => {
   const ai = aiClient();
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: `Analyze the probability of biological paternity based on:
     - User Blood Type: ${data.userBT}
     - Parent 1 Blood Type: ${data.p1BT}
@@ -124,7 +139,7 @@ export const streamAgeProgressionRecords = async (
 ): Promise<GroundingSource[]> => {
   const ai = aiClient();
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: `Find reputable missing person databases and archived records that feature age-progression photos for: "${query}". 
     Focus on cases where the person was never found. Look for resources like NCMEC archives, Doe Network, and cold case records.`,
     config: {
@@ -151,7 +166,7 @@ export const streamPhotoComparison = async (
 ): Promise<GroundingSource[]> => {
   const ai = aiClient();
   const responseStream = await ai.models.generateContentStream({
-    model: "gemini-3-flash-preview",
+    model: "gemini-3.5-flash",
     contents: [
       { inlineData: { data: imageBase64, mimeType } },
       { text: `Analyze this image against historical missing persons, age-progression techniques, and archives. Frame this as an 'Identity Comparison Analysis'.` }
@@ -177,7 +192,7 @@ export const analyzeQuestionProbability = async (userQuestion: string): Promise<
   const ai = aiClient();
   try {
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-3.5-flash",
       contents: `You are a researcher for KinSeeker. The user asks: "${userQuestion}". Estimate the percentage of similar cases that led to adoption discovery.`,
       config: {
         tools: [{ googleSearch: {} }],
